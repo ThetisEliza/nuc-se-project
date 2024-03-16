@@ -1,30 +1,59 @@
 <template>
     <div>
-        <b-container >
-            <b-list-group>
-                <b-list-group-item v-for="item in groups">
-                    <p>{{ item.name }}:{{ item.score }}</p>
-                </b-list-group-item>
-            </b-list-group>
-        </b-container>
+        <v-container>
+            <v-row justify="center">
+            <v-col cols="auto">
+                <v-btn size="x-small">Extra small Button</v-btn>
+            </v-col>
+
+            <v-col cols="auto">
+                <v-btn size="small">Small Button</v-btn>
+            </v-col>
+
+            <v-col cols="auto">
+                <v-btn>Regular Button</v-btn>
+            </v-col>
+
+            <v-col cols="auto">
+                <v-btn size="large">Large Button</v-btn>
+            </v-col>
+
+            <v-col cols="auto">
+                <v-btn size="x-large">X-Large Button</v-btn>
+            </v-col>
+            </v-row>
+        </v-container>
     </div>
 </template>
 
-<script>
+<script lang="js">
 import groupService from '../services/postService'
+import { NButton, useMessage } from 'naive-ui'
+import { defineComponent } from 'vue'
 
-export default {
-    components: {
-
+const createColumns = () => {
+  return [
+    {
+      title: 'Name',
+      key: 'name'
     },
+    {
+      title: 'Score',
+      key: 'score'
+    },
+  ]
+}
 
-    data() {
+export default defineComponent({
+    setup () {
         return {
+            groups: [],
+            columns: createColumns(),
             currentPage: 1,
             NumPerPage: 5,
-            groups: []
         }
-    },
+    }, 
+
 
     mounted() {
         // this.getAllGroups()
@@ -35,19 +64,19 @@ export default {
         getAllGroups() {
             groupService.getAllGroups()
                 .then(res=>{
-                    this.$data.groups = res.data
+                    this.groups = res.data
                 })
         },
 
         getPageGroups(pageNum) {
-            groupService.getPageGroups({pageNum: pageNum, pageSize: this.$data.NumPerPage})
+            groupService.getPageGroups({pageNum: pageNum, pageSize: this.NumPerPage})
                 .then(res=>{
-                    this.$data.currentPage = pageNum
-                    this.$data.groups = res.data.groups
+                    this.currentPage = pageNum
+                    this.groups = res.data.groups
                 })
         }
     }
-}
+})
 
 </script>
 

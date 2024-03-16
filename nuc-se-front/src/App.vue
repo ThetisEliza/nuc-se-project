@@ -1,6 +1,7 @@
 <script setup>
 import HelloWorld from './components/HelloWorld.vue'
 import GroupList  from './views/GroupList.vue';
+import NavBar  from './views/layout/NavBar.vue';
 </script>
 
 <template>
@@ -13,9 +14,22 @@ import GroupList  from './views/GroupList.vue';
     </a>
   </div>
   <HelloWorld msg="Vite + Vue" /> -->
-  <GroupList />
+  <div>
+    <v-icon icon="mdi-home" />
+    <NavBar />
+    <GroupList />
+  </div>
+  
 </template>
 
+<script>
+
+export default {
+  components: {
+    NavBar,
+  }
+}
+</script>
 
 <style scoped>
 .logo {
