@@ -1,53 +1,60 @@
 <template>
     <div>
-        <b-container >
-            <b-list-group>
-                <b-list-group-item v-for="item in groups">
-                    <p>{{ item.name }}:{{ item.score }}</p>
-                </b-list-group-item>
-            </b-list-group>
-        </b-container>
+        <v-data-table-server
+            v-model:items-per-page="groupsPerPage"
+            :items="groups"
+            :items-length="totalGroups"
+            :loading="loading"
+            :headers="headers"
+            item-value="name"
+            @update:options="loadItems"
+        >
+            <template v-slot:item.members="{ item }">
+                <v-tooltip>
+                    <template v-slot:activator="{ props }">
+                        <v-btn v-bind="props" color="indigo-lighten-1">View</v-btn>
+                    </template>
+                    <span v-for="member in item.members">{{ member.name }}</span>
+                </v-tooltip>
+            </template>
+    
+        </v-data-table-server>
     </div>
 </template>
 
-<script>
+<script lang="js">
 import groupService from '../services/postService'
+import { defineComponent } from 'vue'
 
-export default {
-    components: {
 
-    },
-
-    data() {
-        return {
-            currentPage: 1,
-            NumPerPage: 5,
-            groups: []
-        }
-    },
-
-    mounted() {
-        // this.getAllGroups()
-        this.getPageGroups(1, 5)
-    },
+export default defineComponent({
+    
+    data: () => ({
+        itemsPerPage: 5,
+        headers: [
+            { title: 'Name', key: 'name', align: 'head'},
+            { title: 'Score', key: 'score', align: 'end' },
+            { title: 'Regular Score', key: 'regularScore', align: 'end' },
+            { title: 'Last Modify Timestamp', key: 'modifyTimestamp', align: 'end' },
+            { title: 'ViewMembers', key: 'members', align: 'end' },
+        ],
+        groups: [],
+        totalGroups: 30,
+        loading: true,
+    }),
 
     methods: {
-        getAllGroups() {
-            groupService.getAllGroups()
+
+        loadItems({ page, itemsPerPage, sortBy }) {
+            groupService.getPageGroups({pageNum: page, groupsPerPage: itemsPerPage, sortBy: sortBy})
                 .then(res=>{
-                    this.$data.groups = res.data
+                    this.$data.groups = res.data.groups
+                    this.$data.totalGroups = res.data.total
+                    this.$data.loading = false
                 })
         },
-
-        getPageGroups(pageNum) {
-            groupService.getPageGroups({pageNum: pageNum, pageSize: this.$data.NumPerPage})
-                .then(res=>{
-                    this.$data.currentPage = pageNum
-                    this.$data.groups = res.data.groups
-                })
-        }
     }
-}
+})
 
 </script>
 
