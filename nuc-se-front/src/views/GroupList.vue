@@ -2,14 +2,23 @@
     <div>
         <v-data-table-server
             v-model:items-per-page="groupsPerPage"
-            :headers="headers"
             :items="groups"
             :items-length="totalGroups"
             :loading="loading"
-            :hover
+            :headers="headers"
             item-value="name"
             @update:options="loadItems"
-        ></v-data-table-server>
+        >
+            <template v-slot:item.members="{ item }">
+                <v-tooltip>
+                    <template v-slot:activator="{ props }">
+                        <v-btn v-bind="props" color="indigo-lighten-1">View</v-btn>
+                    </template>
+                    <span v-for="member in item.members">{{ member.name }}</span>
+                </v-tooltip>
+            </template>
+    
+        </v-data-table-server>
     </div>
 </template>
 
@@ -23,8 +32,12 @@ export default defineComponent({
     data: () => ({
         itemsPerPage: 5,
         headers: [
-            { title: 'Name', key: 'name', align: 'end'},
-            { title: 'Score', key: 'score', align: 'end' },],
+            { title: 'Name', key: 'name', align: 'head'},
+            { title: 'Score', key: 'score', align: 'end' },
+            { title: 'Regular Score', key: 'regularScore', align: 'end' },
+            { title: 'Last Modify Timestamp', key: 'modifyTimestamp', align: 'end' },
+            { title: 'ViewMembers', key: 'members', align: 'end' },
+        ],
         groups: [],
         totalGroups: 30,
         loading: true,
@@ -33,7 +46,6 @@ export default defineComponent({
     methods: {
 
         loadItems({ page, itemsPerPage, sortBy }) {
-            console.log({pageNum: page, groupsPerPage: itemsPerPage, sortBy: sortBy})
             groupService.getPageGroups({pageNum: page, groupsPerPage: itemsPerPage, sortBy: sortBy})
                 .then(res=>{
                     this.$data.groups = res.data.groups

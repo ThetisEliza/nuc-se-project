@@ -21,6 +21,7 @@
                     </th>
                 </tr>
                 </thead>
+
                 <tbody>
                 <tr
                     v-for="group in groups"
@@ -28,7 +29,7 @@
                 >
                     <td>{{ group.name }}</td>
                     <td>{{ group.score }}</td>
-                    <td>{{ 0 }}</td>
+                    <td>{{ group.regularScore }}</td>
                     <td>
                         <div>
                             <v-chip size="small" 
@@ -44,9 +45,11 @@
                         >Edit</v-btn>
                         <v-dialog
                         v-model="editDialog"
-                        width="auto"
+                        width="600"
+                        height="800"
                         >
                             <v-container>
+                                
                                 <v-card
                                 min-width="500"
                                 min-height="700"
@@ -126,7 +129,7 @@
                                     </v-form>
 
                                 </v-card>
-
+                                
                             </v-container>
                             
 
@@ -152,7 +155,6 @@ export default defineComponent({
         editingRegularScore: 0,
         editingGroup: null,
 
-        itemsPerPage: 5,
         groups: [],
         totalGroups: 30,
         loading: true,
@@ -164,12 +166,10 @@ export default defineComponent({
 
     methods: {
 
-        loadItems({ page, itemsPerPage, sortBy }) {
-            console.log({pageNum: page, groupsPerPage: itemsPerPage, sortBy: sortBy})
-            groupService.getPageGroups({pageNum: page, groupsPerPage: itemsPerPage, sortBy: sortBy})
+        loadItems() {
+            groupService.getAllGroups()
                 .then(res=>{
                     this.$data.groups = res.data.groups
-                    this.$data.totalGroups = res.data.total
                     this.$data.loading = false
                 })
         },
@@ -178,13 +178,31 @@ export default defineComponent({
         dialogOpen({ group }) {
             this.$data.editDialog = true
             this.$data.editingScore = group.score
-            this.$data.editingRegularScore = group.score
+            this.$data.editingRegularScore = group.regularScore
             this.$data.editingGroup = group
         },
 
         dialogConfirm() { 
-            this.$data.editDialog = false
-            this.$data.editingGroup.score =  this.$data.editingScore
+            if (this.$data.editingGroup.score != this.$data.editingScore) {
+                
+                groupService.modifyGroupScore({groupId:this.$data.editingGroup._id, score:this.$data.editingScore, type:"score"})
+                    .then(res=>{
+                        if (res.data.status == 0) {
+                            this.$data.editingGroup.score =  this.$data.editingScore
+                            this.$data.editDialog = false
+                        }
+                    })
+            }
+
+            if (this.$data.editingGroup.regularScore != this.$data.editingRegularScore) {
+                groupService.modifyGroupScore({groupId:this.$data.editingGroup._id, score:this.$data.editingRegularScore, type:"regular"})
+                    .then(res=>{
+                        if (res.data.status == 0) { 
+                            this.$data.editingGroup.regularScore =  this.$data.editingRegularScore
+                            this.$data.editDialog = false
+                        }
+                    })
+            }
         },
 
         dialogCancel() { 
