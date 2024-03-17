@@ -29,6 +29,7 @@
                     >
                     Sign In
                 </v-btn>
+
             </v-form>
         </v-sheet>
     </v-app>
@@ -48,6 +49,7 @@ export default defineComponent({
         username: null,
         password: null,
         loading: false,
+        error_msg: null,
     }),
 
     methods: {
@@ -60,12 +62,19 @@ export default defineComponent({
             this.loading = true
             adminService.login(this.username, this.password)
                 .then(res => {
-                    this.loading = false                    
-                    this.$router.push({name: "edit"})
+                    this.loading = false 
+                    console.log(res, res.data)
+                    if (res.data.status == 0) {
+                        this.$router.push({name: "edit"})
+                    }
+                    else {
+                        this.err_msg = res.data.msg
+                        setTimeout(() => (this.err_msg = ""), 2000)
+                    }                    
                 })
                 .catch(err => {
                     this.loading = false      
-                    console.log(err)
+                   
                 })
         }
     }

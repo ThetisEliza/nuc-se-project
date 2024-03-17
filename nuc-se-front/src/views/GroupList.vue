@@ -6,6 +6,7 @@
             :items="groups"
             :items-length="totalGroups"
             :loading="loading"
+            :hover
             item-value="name"
             @update:options="loadItems"
         ></v-data-table-server>

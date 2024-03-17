@@ -3,7 +3,7 @@
       <v-container>
         <v-app-bar :elevation="10" rounded scroll-threshold="5" scroll-behavior="hide">
           <template v-slot:prepend>
-            <v-app-bar-nav-icon></v-app-bar-nav-icon>
+            <v-btn icon="mdi-home" @click="onHomeIcon"></v-btn>
           </template>
         
           <v-app-bar-title>Application Bar</v-app-bar-title>
@@ -23,7 +23,9 @@ import { defineComponent } from 'vue'
 
 export default defineComponent({
   methods: {
-
+    onHomeIcon() {
+      this.$router.push({name: 'home'})
+    }
   }
 })
 
