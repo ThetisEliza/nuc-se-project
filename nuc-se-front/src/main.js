@@ -2,7 +2,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import axios from 'axios'
 import VueAxios from 'vue-axios'
-
+import router from './router/index.js'
 
 
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
@@ -33,4 +33,4 @@ const vuetify = createVuetify({
     },
   })
 
-createApp(App).use(vuetify).use(VueAxios, axios).mount('#app')
+createApp(App).use(router).use(vuetify).use(VueAxios, axios).mount('#app')

@@ -1,7 +1,8 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+// import HelloWorld from './components/HelloWorld.vue'
 import GroupList  from './views/GroupList.vue';
 import NavBar  from './views/layout/NavBar.vue';
+import LayoutFooter from './views/layout/LayoutFooter.vue';
 </script>
 
 <template>
@@ -15,9 +16,19 @@ import NavBar  from './views/layout/NavBar.vue';
   </div>
   <HelloWorld msg="Vite + Vue" /> -->
   <div>
-    <v-icon icon="mdi-home" />
-    <NavBar />
-    <GroupList />
+    <v-app>
+      <NavBar />
+      <v-main>
+        <v-container>
+          <div id="router-view">
+            <router-view />
+          </div>
+        </v-container>
+      
+      </v-main>
+      <LayoutFooter />
+    </v-app>
+      
   </div>
   
 </template>
@@ -27,21 +38,11 @@ import NavBar  from './views/layout/NavBar.vue';
 export default {
   components: {
     NavBar,
+    GroupList,
+    LayoutFooter,
   }
 }
 </script>
 
 <style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
-}
 </style>
