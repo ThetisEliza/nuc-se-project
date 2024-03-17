@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import random
 import re
@@ -48,23 +48,50 @@ Names = """（1）Eric——艾利克　　Ron——罗恩
 （39）Nina——妮娜　　Page——佩格
 （40）Zona——若娜　　Jon——琼恩"""
 
-NAMES = re.findall("[a-zA-Z]+?——\w+?", Names)
-
+NAMES = re.findall("[a-zA-Z]+", Names)
+ID = 0
+GID = 0
+@dataclass
+class Member:
+    _id: str = ""
+    name: str = ""
+    num: str = ""
 
 @dataclass
 class Group:
+    _id: str = ""
     name: str = ""
     score: float = 0
+    members: list = field(default_factory=list)
     
     def to_json(self) -> str:
-        return json.dumps(self.__dict__, ensure_ascii=False)
+        members = list(map(lambda x: x.__dict__, self.members))
+        data = {**self.__dict__}
+        data['members'] = members
+        return json.dumps(data, ensure_ascii=False)
     
     @staticmethod
     def random_gen() -> 'Group':
-        return Group(random.choice(NAMES), random.randrange(0, 300, 10))
+        
+        def GenM():
+            global ID
+            m = Member(f"{ID}", f"M-{random.randrange(1, 20)}", f"N2023{random.randrange(1000, 2000)}")
+            ID += 1
+            return m
+        global GID
+        GID += 1
+        return Group(f"{GID}",
+            random.choice(NAMES), 
+            random.randrange(0, 300, 10), 
+            [GenM() for _ in range(5)]
+            )
     
     def parse(data: str) -> 'Group':
-        return Group(**json.loads(data))
+        data = json.loads(data)
+        members = data.get('members', [])
+        members = list(map(lambda x: Member(**x), members))
+        data['members'] = members
+        return Group(**data)
     
 if __name__ == '__main__':
     print(Group.random_gen())

@@ -1,12 +1,13 @@
-from flask import Flask, jsonify, Response, request
+from flask import Flask, jsonify, Response, request, abort
 import sys
 from model.data import Group
 import json
+from typing import List
 
 
 class System:
     def __init__(self) -> None:
-        self.groups = []
+        self.groups: List[Group] = []
 
     def load_sys(self) -> 'System':
         with open('/home/phoenix/projects/nuc-se-project/demo/tmp/groups.jsonl') as f:
@@ -21,13 +22,17 @@ app.config['JSON_AS_ASCII'] = False
 app.json.ensure_ascii = False
 system = System().load_sys()
 
+
+
 def allowCrossSite(response: Response) -> Response:
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Method'] = '*'
     response.headers['Access-Control-Allow-Headers'] = '*'
     return response
     
-
+##########################
+# Group Full status api
+##########################
 @app.route('/api/groups/all')
 def get_all_groups():
     res = jsonify(system.groups)
@@ -46,8 +51,92 @@ def get_page_groups():
         "groups": system.groups[page_size*page_num:page_size*(page_num+1)],
         "total": len(system.groups)
     }
-    
     res = jsonify(data)
+    return allowCrossSite(res)
+
+
+##########################
+# User status api
+##########################
+
+@app.route('/api/admin/login')
+def login():
+    print(request)
+    user = request.args.get("username")
+    pswd = request.args.get("password", 0)
+    mock_list = {
+        'qwe': 'qwe',
+        'admin': 12345,
+        'admin1': 123451,
+        'admin2': 123452
+    }
+    login_status = 0
+    if user in mock_list:
+        if mock_list[user] == pswd:
+            login_status = 0
+        else:
+            login_status = 1
+            abort(allowCrossSite(Response("Password error")))
+    else:
+        login_status = 2
+        abort(allowCrossSite(Response("User not found")))
+    data = {
+        "user": user,
+        "status": login_status
+    }
+    return allowCrossSite(jsonify(data))
+
+
+
+##########################
+# Admin Group CRUD API
+##########################
+
+def find_group(_id) -> Group | None:
+    res = list(filter(lambda x: x._id == _id, system.groups()))
+    if len(res) == 0:
+        return None
+    else:
+        return res[0]
+    
+@app.route('/api/group/details')
+def get_group_details():
+    print(request.args)
+    _id = request.args.get('groupid', 0)
+    group = find_group(_id)
+    if group is None:
+        abort(allowCrossSite(Response("group not found")))
+    return allowCrossSite(jsonify(group))
+
+@app.route('/api/group/modifyscore')
+def modify_group_score():
+    print(request.args)
+    _id = request.args.get('groupid', 0)
+    score = request.args.get('score', 0)
+    group = find_group(_id)
+    if group is None:
+        abort(allowCrossSite(Response("group not found")))
+    group.score = score    
+    return allowCrossSite(jsonify(group))
+
+def add_group():
+    res = jsonify(system.groups)
+    return allowCrossSite(res)
+
+def remove_group():
+    res = jsonify(system.groups)
+    return allowCrossSite(res)
+
+def add_group_member():
+    res = jsonify(system.groups)
+    return allowCrossSite(res)
+
+def remove_group_member():
+    res = jsonify(system.groups)
+    return allowCrossSite(res)
+
+def get_idle_members():
+    res = jsonify(system.groups)
     return allowCrossSite(res)
 
 
