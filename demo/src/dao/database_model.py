@@ -7,9 +7,11 @@ sys.path.append(str(Path(__file__).parent.parent.absolute()))
 from model.data import Group, Member
 from datetime import datetime
 from typing import List, Dict, Tuple
+from threading import Lock
 
 class DatabaseController:
     def __init__(self) -> None:
+        self.lock = Lock()
         self.db = pymysql.connect(host="localhost", 
                      user="debian-sys-maint", 
                      password="mbjmYmElkwOe6Tg2", 
@@ -21,10 +23,12 @@ class DatabaseController:
     def getGroups(self):
         db = self.db
         cursor = db.cursor()
-        sql = f" select * from nuc_groups inner join nuc_students on nuc_groups.name = nuc_students.studentname;;"
+        sql = f"select * from nuc_groups inner join nuc_students on nuc_groups.name = nuc_students.studentname;"
+        self.lock.acquire()
         cursor.execute(sql)
         results = cursor.fetchall()
         db.commit()
+        self.lock.release()
         return results
     
     def updateGroup(self, group: Group, is_modify: bool = False):
@@ -34,15 +38,20 @@ class DatabaseController:
             sql = f"update nuc_groups set totalmark = {group.score}, ragularmark = {group.regularScore}, modifyTimestamp = {str(int(datetime.now().timestamp()))} where id = {group._id}"
         else:
             sql = f"update nuc_groups set totalmark = {group.score}, ragularmark = {group.regularScore} where id = {group._id}"
+        self.lock.acquire()
         cursor.execute(sql)
         db.commit()
+        self.lock.release()
         
     def getGroup(self, groupId: str):
         db = self.db
         cursor = db.cursor()
-        sql = f" select * from nuc_groups inner join nuc_students on nuc_groups.name = nuc_students.studentname where nuc_groups.id = {groupId}"
+        sql = f"select * from nuc_groups inner join nuc_students on nuc_groups.name = nuc_students.studentname where nuc_groups.id = {groupId}"
+        print(sql)
+        self.lock.acquire()
         cursor.execute(sql)
         results = cursor.fetchall()
+        self.lock.release()
         return results
     
     def removeGroup(self, group: Group):
@@ -76,6 +85,7 @@ class DatabaseBzController:
         results = self.dc.getGroups()
         group_list: Dict[str, Group] = {}
         for gid, gname, score, rscore, _, modify, sid, sname, sno, _, _ in results:
+            print(gid, gname, score, rscore, _, modify, sid, sname, sno, _, _)
             if str(gid) not in group_list:
                 group_list[str(gid)] = Group(str(gid), gname, score, rscore, int(modify), [])
             m = Member(str(sid), sname, sno)
@@ -90,19 +100,22 @@ class DatabaseBzController:
         return groups[(page-1)*numPerPage:page*numPerPage], len(groups)
         
     def updateGroupScore(self, groupId: str, updateScore):
+        # print(groupId)
         results = self.dc.getGroup(groupId)
+        # print(results)
         group_list: Dict[str, Group] = {}
         for gid, gname, score, rscore, _, modify, sid, sname, sno, _, _ in results:
             if str(gid) not in group_list:
                 group_list[str(gid)] = Group(str(gid), gname, score, rscore, int(modify), [])
             m = Member(str(sid), sname, sno)
             group_list[str(gid)].members.append(m)
-            
+        # print(group_list)
         if len(group_list) == 0:
             return -1
         else:
             queryGroup = list(group_list.values())[0]
             queryGroup.score = updateScore
+            # print(queryGroup)
             self.dc.updateGroup(queryGroup, True)
             groups = self.getAllGroups()
             max_score = max(map(lambda x: x.score, groups))

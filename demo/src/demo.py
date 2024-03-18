@@ -117,9 +117,9 @@ def get_group_details():
 @app.route('/api/group/modifyscore')
 def modify_group_score():
     print(request.args)
-    _id = request.args.get('groupId', 0)
+    _id = request.args.get('groupId')
     score = request.args.get('score', 0)
-
+    print(_id, score)
     res = system.dbc.updateGroupScore(_id, float(score))
     data = {
         "msg": "ok",
