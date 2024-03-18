@@ -7,7 +7,7 @@
 <template>
     <div>
         <v-data-table-server
-            v-model:items-per-page="groupsPerPage"
+            v-model:items-per-page="itemsPerPage"
             :items="groups"
             :items-length="totalGroups"
             :loading="loading"

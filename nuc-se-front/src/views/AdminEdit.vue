@@ -1,138 +1,104 @@
 <template>
     <div>
-        <v-list lines="one">
-            <v-table>
-                <thead>
-                <tr>
-                    <th class="text-left">
-                    团队名称
-                    </th>
-                    <th class="text-left">
-                    得分
-                    </th>
-                    <th class="text-left">
-                    平时分
-                    </th>
-                    <th class="text-left">
-                    修改时间
-                    </th>
-                    <th class="text-left">
-                    成员
-                    </th>
-                    <th class="text-left">
-                    操作
-                    </th>
-                </tr>
-                </thead>
+        <v-data-table-server
+            v-model:items-per-page="groupsPerPage"
+            :items="groups"
+            :items-length="totalGroups"
+            :loading="loading"
+            :headers="headers"
+            item-value="name"
+            @update:options="loadItems"
+        >
 
-                <tbody>
-                <tr
-                    v-for="group in groups"
-                    :key="group.name"
-                >
-                    <td>{{ group.name }}</td>
-                    <td>{{ group.score }}</td>
-                    <td>{{ group.regularScore }}</td>
-                    <td>{{ group.modifyTimestamp }}</td>
-                    <td>
-                        <div>
-                            <v-chip size="small" 
-                            color="primary"
-                            v-for="member in group.members" 
-                            :key="member.name">{{ member.name }}</v-chip>
-                        </div>
-                    </td>
-                    <td>
-                        <v-btn size="small" 
-                        color="red"
-                        @click="dialogOpen({group: group})"
-                        >编辑</v-btn>
-                        <v-dialog
-                        v-model="editDialog"
-                        >
-                            <v-container
-                            widh="30%"
+            <template v-slot:item.members="{ item }">
+                <v-chip v-for="member in item.members" color="primary">{{ member.name }}</v-chip>
+            </template>
+
+            <template v-slot:item.edit="{ item }">
+                <v-btn v-bind="props" color="red"
+                @click="dialogOpen(item)"
+                >编辑
+                </v-btn>
+            </template>
+      
+        </v-data-table-server>
+
+        <v-dialog
+        v-model="editing"
+        max-width="600"
+        >
+
+            <v-card>
+                <v-card-text>编辑团队信息</v-card-text>
+                <v-card-text>
+                    
+                    <v-row dense>
+                        <v-col
+                            cols="12"
+                            md="4"
+                            sm="6"
+            >
+                        <v-text-field
+                            variant="outlined"
+                            v-model="editingScore"
+                            label="score"
+                        ></v-text-field>
+                        </v-col>
+                    </v-row>
+                    
+                </v-card-text>
+
+                <v-divider></v-divider>
+
+                
+                <v-card-actions>
+                    <v-chip-group>                     
+                        <v-flex>
+                            <v-chip 
+                                v-for="member in editingGroup.members"
+                                closable
                             >
-                                <v-card
-                                text="Group Edit"
-                                >
-                                    <v-form>
-                                        <v-text-field
-                                            variant="outlined"
-                                            v-model="editingScore"
-                                            label="score"
-                                        > 
-                                            
-                                        </v-text-field>
-                                        
-                                        <v-container>
-                                            <v-row justify="center">
-                                            <v-chip-group>
-                                                
-                                                    <v-flex>
-                                                        <v-chip 
-                                                            v-for="member in editingGroup.members"
-                                                            closable
-                                                        >
-                                                            {{ member.name }}
-                                                        </v-chip>
-                                                    </v-flex>
-                                                
-                                            </v-chip-group>
-                                        </v-row>
+                                {{ member.name }}
+                            </v-chip>
+                        </v-flex>
+                    </v-chip-group>
+                </v-card-actions>
 
-                                        </v-container>
-                                        
-                                        
+                <v-card-actions>
+                    <v-btn>
+                        添加成员
+                    </v-btn>
 
-                                        <v-divider class="border-opacity-75" color="info"
-                                        ></v-divider>
+                    <v-btn>
+                        解散团队
+                    </v-btn>
+                </v-card-actions>
 
 
-                                        <v-container>
-                                            <v-row>
-                                                <v-btn>
-                                                    添加成员
-                                                </v-btn>
+                <v-divider></v-divider>
 
-                                                <v-btn>
-                                                    解散团队
-                                                </v-btn>
-                                            </v-row>
-                                        </v-container>
-                                        
-                                        
-                                        
-                                        <v-divider class="border-opacity-75" color="info"
-                                        ></v-divider>
-                                        
-                                        <v-container>
-                                            <v-btn
-                                            @click="dialogConfirm()"
-                                            >
-                                                确认
-                                            </v-btn>
-                                            <v-btn
-                                            @click="dialogCancel()"
-                                            >
-                                                取消
-                                            </v-btn>
-                                        </v-container>
-                                        
-                                        
-                                    </v-form>
 
-                                </v-card>
-                                
-                            </v-container>
-                            
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                    color="red"
+                    @click="dialogConfirm()"
+                    >
+                    确认
+                    </v-btn>
+                    <v-btn
+                    @click="dialogCancel()"
+                    >
+                    取消
+                    </v-btn>
 
-                        </v-dialog>
-                    </td>
-                </tr>
-                </tbody>
-            </v-table>
-        </v-list>
+                </v-card-actions>
+            </v-card>
+            
+            
+           
+
+        </v-dialog>
     </div>
 </template>
 
@@ -144,13 +110,22 @@ import { defineComponent } from 'vue'
 export default defineComponent({
     
     data: () => ({
-        editDialog: false,
-        editingScore: 0,
-        editingGroup: null,
-
+        itemsPerPage: 5,
+        headers: [
+            { title: '团队名称', key: 'name', align: 'head'},
+            { title: '分数', key: 'score', align: 'gead' },
+            { title: '平时分', key: 'regularScore', align: 'gead' },
+            { title: '修改时间', key: 'modifyTimestamp', align: 'gead' },
+            { title: '查看成员', key: 'members', align: 'head' },
+            { title: '', key: 'edit', align: 'end' },
+        ],
         groups: [],
         totalGroups: 30,
         loading: true,
+
+        editing: false,
+        editingScore: 0,
+        editingGroup: null,        
     }),
 
     mounted() {
@@ -172,8 +147,8 @@ export default defineComponent({
         },
 
 
-        dialogOpen({ group }) {
-            this.$data.editDialog = true
+        dialogOpen(group) {
+            this.$data.editing = true
             this.$data.editingScore = group.score
             this.$data.editingGroup = group
         },
@@ -185,7 +160,7 @@ export default defineComponent({
                     .then(res=>{
                         if (res.data.status == 0) {
                             this.$data.editingGroup.score =  this.$data.editingScore
-                            this.$data.editDialog = false
+                            this.$data.editing = false
                             this.loadItems()
                         }
                     })
@@ -193,7 +168,7 @@ export default defineComponent({
         },
 
         dialogCancel() { 
-            this.$data.editDialog = false
+            this.$data.editing = false
         }
     }
 })
