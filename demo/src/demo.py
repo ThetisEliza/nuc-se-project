@@ -3,16 +3,14 @@ import sys
 from model.data import Group
 import json
 from typing import List
-
+from dao.database_model import DatabaseBzController
 
 class System:
     def __init__(self) -> None:
-        self.groups: List[Group] = []
+        self.dbc = None
 
     def load_sys(self) -> 'System':
-        with open('/home/phoenix/projects/nuc-se-project/demo/tmp/groups.jsonl') as f:
-            for line in f:
-                self.groups.append(Group.parse(line.strip()))
+        self.dbc = DatabaseBzController()
         return self
 
 import os
@@ -21,7 +19,6 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 app.json.ensure_ascii = False
 system = System().load_sys()
-
 
 
 def allowCrossSite(response: Response) -> Response:
@@ -35,21 +32,25 @@ def allowCrossSite(response: Response) -> Response:
 ##########################
 @app.route('/api/groups/all')
 def get_all_groups():
-    res = jsonify(system.groups)
-    return allowCrossSite(res)
+    data = {
+        "groups": system.dbc.getAllGroups(None),
+    }
+    return allowCrossSite(jsonify(data))
 
 @app.route('/api/groups/page')
 def get_page_groups():
     print(request.args)
     # request_data = request.json
-    page_num = request.args.get('pageNum', 0)
-    page_size = request.args.get('pageSize', 0)
-    page_num = int(page_num) - 1
+    page_num = request.args.get('pageNum', '0')
+    page_size = request.args.get('pageSize', '1')
+    sort_with = request.args.get('sortBy[0][key]')
+    sort_order = request.args.get('sortBy[0][order]', 'desc')   
+    page_num = int(page_num)
     page_size = int(page_size)
-    
+    groups, total = system.dbc.getPageGroups(page_num, page_size, sort_with, sort_order)
     data = {
-        "groups": system.groups[page_size*page_num:page_size*(page_num+1)],
-        "total": len(system.groups)
+        "groups": groups,
+        "total": total
     }
     res = jsonify(data)
     return allowCrossSite(res)
@@ -74,26 +75,31 @@ def login():
     if user in mock_list:
         if mock_list[user] == pswd:
             login_status = 0
+            msg = 'OK'
         else:
             login_status = 1
-            abort(allowCrossSite(Response("Password error")))
+            msg = 'Password error'
     else:
         login_status = 2
-        abort(allowCrossSite(Response("User not found")))
+        msg = 'User not found'
+        
     data = {
         "user": user,
-        "status": login_status
+        "status": login_status,
+        "msg": msg
     }
+    if login_status != 0:
+        abort(allowCrossSite(jsonify(data)))
     return allowCrossSite(jsonify(data))
 
-
+from datetime import datetime
 
 ##########################
 # Admin Group CRUD API
 ##########################
 
-def find_group(_id) -> Group | None:
-    res = list(filter(lambda x: x._id == _id, system.groups()))
+def find_group(_id) -> Group:
+    res = list(filter(lambda x: x._id == _id, system.dbc.getAllGroups()))
     if len(res) == 0:
         return None
     else:
@@ -111,13 +117,15 @@ def get_group_details():
 @app.route('/api/group/modifyscore')
 def modify_group_score():
     print(request.args)
-    _id = request.args.get('groupid', 0)
+    _id = request.args.get('groupId', 0)
     score = request.args.get('score', 0)
-    group = find_group(_id)
-    if group is None:
-        abort(allowCrossSite(Response("group not found")))
-    group.score = score    
-    return allowCrossSite(jsonify(group))
+
+    res = system.dbc.updateGroupScore(_id, float(score))
+    data = {
+        "msg": "ok",
+        "status": res
+    }
+    return allowCrossSite(jsonify(data))
 
 def add_group():
     res = jsonify(system.groups)

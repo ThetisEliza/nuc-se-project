@@ -57,11 +57,15 @@ class Member:
     name: str = ""
     num: str = ""
 
+from datetime import datetime
+
 @dataclass
 class Group:
     _id: str = ""
     name: str = ""
-    score: float = 0
+    score: float = 0,
+    regularScore: float = 0,
+    modifyTimestamp: int = 0,
     members: list = field(default_factory=list)
     
     def to_json(self) -> str:
@@ -82,7 +86,9 @@ class Group:
         GID += 1
         return Group(f"{GID}",
             random.choice(NAMES), 
-            random.randrange(0, 300, 10), 
+            random.randrange(0, 300, 10),
+            random.randrange(0, 100, 10), 
+            int(datetime.now().timestamp()),
             [GenM() for _ in range(5)]
             )
     
