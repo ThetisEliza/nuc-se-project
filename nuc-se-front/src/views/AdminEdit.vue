@@ -5,19 +5,22 @@
                 <thead>
                 <tr>
                     <th class="text-left">
-                    Name
+                    团队名称
                     </th>
                     <th class="text-left">
-                    Score
+                    得分
                     </th>
                     <th class="text-left">
-                    Regular Score
+                    平时分
                     </th>
                     <th class="text-left">
-                    Members
+                    修改时间
                     </th>
                     <th class="text-left">
-                    Opt
+                    成员
+                    </th>
+                    <th class="text-left">
+                    操作
                     </th>
                 </tr>
                 </thead>
@@ -30,6 +33,7 @@
                     <td>{{ group.name }}</td>
                     <td>{{ group.score }}</td>
                     <td>{{ group.regularScore }}</td>
+                    <td>{{ group.modifyTimestamp }}</td>
                     <td>
                         <div>
                             <v-chip size="small" 
@@ -42,17 +46,14 @@
                         <v-btn size="small" 
                         color="red"
                         @click="dialogOpen({group: group})"
-                        >Edit</v-btn>
+                        >编辑</v-btn>
                         <v-dialog
                         v-model="editDialog"
-                        width="600"
-                        height="800"
                         >
-                            <v-container>
-                                
+                            <v-container
+                            widh="30%"
+                            >
                                 <v-card
-                                min-width="500"
-                                min-height="700"
                                 text="Group Edit"
                                 >
                                     <v-form>
@@ -62,13 +63,6 @@
                                             label="score"
                                         > 
                                             
-                                        </v-text-field>
-                                            
-                                        <v-text-field
-                                            variant="outlined"
-                                            v-model="editingRegularScore"
-                                            label="regular score"
-                                        >
                                         </v-text-field>
                                         
                                         <v-container>
@@ -98,11 +92,11 @@
                                         <v-container>
                                             <v-row>
                                                 <v-btn>
-                                                    AddMember
+                                                    添加成员
                                                 </v-btn>
 
                                                 <v-btn>
-                                                    Dismiss Group
+                                                    解散团队
                                                 </v-btn>
                                             </v-row>
                                         </v-container>
@@ -116,12 +110,12 @@
                                             <v-btn
                                             @click="dialogConfirm()"
                                             >
-                                                Confirm
+                                                确认
                                             </v-btn>
                                             <v-btn
                                             @click="dialogCancel()"
                                             >
-                                                Cancel
+                                                取消
                                             </v-btn>
                                         </v-container>
                                         
@@ -152,7 +146,6 @@ export default defineComponent({
     data: () => ({
         editDialog: false,
         editingScore: 0,
-        editingRegularScore: 0,
         editingGroup: null,
 
         groups: [],
@@ -170,6 +163,10 @@ export default defineComponent({
             groupService.getAllGroups()
                 .then(res=>{
                     this.$data.groups = res.data.groups
+                    this.$data.groups.forEach(group => {
+                        group.regularScore = parseInt(group.regularScore)
+                        group.modifyTimestamp = new Date(group.modifyTimestamp*1000).toLocaleString()
+                    });
                     this.$data.loading = false
                 })
         },
@@ -178,7 +175,6 @@ export default defineComponent({
         dialogOpen({ group }) {
             this.$data.editDialog = true
             this.$data.editingScore = group.score
-            this.$data.editingRegularScore = group.regularScore
             this.$data.editingGroup = group
         },
 
@@ -190,16 +186,7 @@ export default defineComponent({
                         if (res.data.status == 0) {
                             this.$data.editingGroup.score =  this.$data.editingScore
                             this.$data.editDialog = false
-                        }
-                    })
-            }
-
-            if (this.$data.editingGroup.regularScore != this.$data.editingRegularScore) {
-                groupService.modifyGroupScore({groupId:this.$data.editingGroup._id, score:this.$data.editingRegularScore, type:"regular"})
-                    .then(res=>{
-                        if (res.data.status == 0) { 
-                            this.$data.editingGroup.regularScore =  this.$data.editingRegularScore
-                            this.$data.editDialog = false
+                            this.loadItems()
                         }
                     })
             }
