@@ -1,3 +1,9 @@
+<!--
+ * @Date: 2024-03-18 14:38:26
+ * @LastEditors: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
+ * @LastEditTime: 2024-03-18 16:07:30
+ * @FilePath: \nuc-se-front\src\views\AdminLogin.vue
+-->
 <template>
     <v-app>
         <v-sheet class="mx-auto" width="300">
@@ -8,14 +14,14 @@
                 <v-text-field
                     v-model="username"
                     :rules="[validEmpty]"
-                    placeholder="username"
-                    hint="Enter The Admin username"
+                    placeholder="管理员用户名"
+                    hint="输入管理员用户名"
                 ></v-text-field>
                 <v-text-field
                     v-model="password"
                     :rules="[validEmpty]"
-                    placeholder="password"
-                    hint="Enter password to access admin control"
+                    placeholder="密码"
+                    hint="输入管理员用户密码"
                     type="password"
                 ></v-text-field>
                 <v-btn
@@ -27,7 +33,7 @@
                     variant="elevated"
                     block
                     >
-                    Sign In
+                    登录
                 </v-btn>
 
             </v-form>
@@ -37,6 +43,7 @@
 
 <script lang="js">
 import adminService  from '../services/adminService'
+import storageService from '../services/storageService'
 import { defineComponent } from 'vue'
 
 export default defineComponent({
@@ -54,7 +61,7 @@ export default defineComponent({
 
     methods: {
         validEmpty(value) {
-            return !! value || 'Field is required'
+            return !! value || '输入不能为空'
         },
 
         onSubmit() {
@@ -63,8 +70,8 @@ export default defineComponent({
             adminService.login(this.username, this.password)
                 .then(res => {
                     this.loading = false 
-                    console.log(res, res.data)
                     if (res.data.status == 0) {
+                        storageService.set(storageService.PREFIX, this.username)
                         this.$router.push({name: "edit"})
                     }
                     else {
