@@ -15,7 +15,7 @@
           <v-app-bar-title>NUC-SE-Project</v-app-bar-title>
         
           <template v-slot:append>
-            <v-btn icon="mdi-magnify"></v-btn>
+            <!-- <v-btn icon="mdi-magnify"></v-btn> -->
             <v-btn @click="$router.push({name: 'login'})"> 登录 </v-btn>
           </template>
         </v-app-bar>

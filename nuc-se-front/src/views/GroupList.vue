@@ -5,14 +5,35 @@
  * @FilePath: \nuc-se-front\src\views\GroupList.vue
 -->
 <template>
-    <div>
+    <v-card flat>
+        <v-card-title class="d-flex align-center pe-2">
+            <v-icon icon="mdi-account-multiple"></v-icon> &nbsp;
+            团队
+
+            <v-spacer></v-spacer>
+            <v-text-field
+                v-model="search"
+                density="compact"
+                label="查找团队"
+                prepend-inner-icon="mdi-magnify"
+                variant="solo-filled"
+                flat
+                hide-details
+                single-line
+            ></v-text-field>
+        </v-card-title> 
+        <v-divider></v-divider>
+    
         <v-data-table-server
-            v-model:items-per-page="groupsPerPage"
+            v-model:items-per-page="itemsPerPage"
+            
+            :search="search"
             :items="groups"
             :items-length="totalGroups"
             :loading="loading"
             :headers="headers"
             item-value="name"
+            items-per-page-text="每页"
             @update:options="loadItems"
         >
             <template v-slot:item.members="{ item }">
@@ -25,7 +46,8 @@
             </template>
     
         </v-data-table-server>
-    </div>
+
+    </v-card flat>
 </template>
 
 <script lang="js">
@@ -47,21 +69,34 @@ export default defineComponent({
         groups: [],
         totalGroups: 30,
         loading: true,
+        search: "",
+        page: 1,
     }),
 
     methods: {
 
-        loadItems({ page, itemsPerPage, sortBy }) {
+        loadItems({ page, itemsPerPage, sortBy, search }) {
             groupService.getPageGroups({pageNum: page, groupsPerPage: itemsPerPage, sortBy: sortBy})
                 .then(res=>{
-                    this.$data.groups = res.data.groups
-                    this.$data.groups.forEach(group => {
+                    res.data.groups.forEach(group => {
                         group.regularScore = parseInt(group.regularScore)
                         group.modifyTimestamp = new Date(group.modifyTimestamp*1000).toLocaleString()
-                    });
+                    })
+                    let groups = res.data.groups.filter(group => {
+                        if (search && !group.name.toLowerCase().includes(search.toLowerCase())) {
+                            return false
+                        }
+                        return true;
+                    })
+
+                    this.$data.groups = groups;
                     this.$data.totalGroups = res.data.total
                     this.$data.loading = false
                 })
+        },
+
+        pageCount () {
+            return Math.ceil(this.$data.totalGroups / this.$data.itemsPerPage)
         },
     }
 })
