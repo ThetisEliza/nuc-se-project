@@ -1,6 +1,6 @@
 import GroupList from "@/views/GroupList.vue"
 import adminRoutes from "./admin";
-
+import storageService from "../services/storageService";
 import { createRouter, createWebHistory  } from 'vue-router'
 
 const router = createRouter({
@@ -16,7 +16,16 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-    next()
+    if (to.meta.auth) {
+        if (storageService.get(storageService.PREFIX) != null) {
+            next()
+        } else {
+            router.push({name: 'login'})
+        }
+    } else {
+        next()
+    }
+    
 })
 
 export default router;
