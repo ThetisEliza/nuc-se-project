@@ -51,7 +51,7 @@
 </template>
 
 <script lang="js">
-import groupService from '../services/postService'
+import groupService from '../services/groupService'
 import { defineComponent } from 'vue'
 
 

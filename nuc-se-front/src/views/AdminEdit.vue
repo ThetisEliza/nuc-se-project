@@ -16,6 +16,12 @@
                     hide-details
                     single-line
                 ></v-text-field>
+                <v-btn @click="dialogOpen()">
+                    <template v-slot:prepend>
+                        <v-icon color="success"  icon="mdi-plus"></v-icon>
+                    </template>
+                    添加团队
+                </v-btn>
             </v-card-title> 
             <v-divider></v-divider>
             <v-data-table-server
@@ -34,7 +40,7 @@
                 </template>
 
                 <template v-slot:item.edit="{ item }">
-                    <v-btn v-bind="props" color="red"
+                    <v-btn color="red"
                     @click="dialogOpen(item)"
                     >编辑
                     </v-btn>
@@ -53,53 +59,54 @@
             <v-card>
                 <v-card-text>编辑团队信息</v-card-text>
                 <v-card-text>
-                    
-                    <v-row dense>
-                        <v-col
-                            cols="12"
-                            md="4"
-                            sm="6"
-                        >
-                        <v-text-field
-                            variant="outlined"
-                            v-model="editingAddScore"
-                            label="添加分数"
-                        ></v-text-field>
+                    <v-text-field
+                        variant="outlined"
+                        v-model="editingAddScore"
+                        label="添加分数"
+                    ></v-text-field>
 
-                        <text>分数预览：{{ parseInt(editingGroup.score) + parseInt(editingAddScore) }}</text>
-                        </v-col>
-                    </v-row>
-                    
+                    <text>分数预览：{{ previewScore() }}</text>
+                </v-card-text>
+                
+                <v-card-text>
+                    <v-text-field
+                        variant="outlined"
+                        v-model="editingGroup.name"
+                        label="团队名称"
+                        :disabled="!newGroup"
+                    ></v-text-field>
                 </v-card-text>
 
                 <v-divider></v-divider>
 
-                
-                <!-- <v-card-actions>
-                    <v-chip-group>                     
-                        <v-flex>
-                            <v-chip 
-                                v-for="member in editingGroup.members"
-                                closable
-                            >
-                                {{ member.name }}
-                            </v-chip>
-                        </v-flex>
-                    </v-chip-group>
-                </v-card-actions>
+                <!-- <v-card-actions> -->
+                <v-card-text>
+                    
+                    
+                    <v-row justify="center">
+                        
+                        <v-select
+                            v-model="editingMembersName"
+                            :items="getAvailableMembers()"
+                            label="成员"
+                            chips
+                            multiple
+                        ></v-select>
+                        
+                        
+                        
+                        <v-btn 
+                        v-if="!newGroup"
+                        @click="dismissGroup()"
+                        color="red">
+                            解散团队
+                        </v-btn>
+                    
+                    </v-row>
 
-                <v-card-actions>
-                    <v-btn>
-                        添加成员
-                    </v-btn>
+                    
+                </v-card-text>
 
-                    <v-btn>
-                        解散团队
-                    </v-btn>
-                </v-card-actions> -->
-
-
-                <v-divider></v-divider>
 
 
                 <v-card-actions>
@@ -128,7 +135,7 @@
 </template>
 
 <script lang="js">
-import groupService from '../services/postService'
+import groupService from '../services/groupService'
 import { defineComponent } from 'vue'
 
 
@@ -151,7 +158,17 @@ export default defineComponent({
         editing: false,
         editingAddScore: 0,
         editingGroup: null,    
+        newGroup: false,
         search: "",    
+
+        editingMembers: [],
+        editingMembersName: [],
+        mockSpareMembers: [
+            {_id: 1, name: "SM1", num: "xxx1"},
+            {_id: 2, name: "SM2", num: "xxx2"},
+            {_id: 3, name: "SM3", num: "xxx3"},
+        ]
+
     }),
 
     mounted() {
@@ -180,29 +197,63 @@ export default defineComponent({
                 })
         },
 
+        previewScore() {
+            if (this.$data.editingGroup != null) {
+                let a = parseInt( this.$data.editingAddScore );
+                if(isNaN(a)) {
+                    a = 0
+                }
+                return this.$data.editingGroup.score + a
+            }
+            return 0   
+        },
 
         dialogOpen(group) {
+            if (group == null) {
+                this.editingGroup = {name: "", score: 0, members: []}
+                this.$data.editingScore = 0
+                this.$data.newGroup = true
+            } else {
+                this.$data.editingScore = group.score
+                this.$data.editingGroup = group
+                this.$data.newGroup = false
+            }
+            this.$data.editingMembers = this.$data.editingGroup.members
+            this.$data.editingMembersName = this.$data.editingMembers.map(m => m.name +" "+m.num)
             this.$data.editing = true
-            this.$data.editingScore = group.score
-            this.$data.editingGroup = group
+            
         },
 
         dialogConfirm() { 
-            if (this.$data.editingGroup.score != this.$data.editingScore) {
-                
-                groupService.modifyGroupScore({groupId:this.$data.editingGroup._id, score:this.$data.editingScore, type:"score"})
+            if (this.$data.editingAddScore != 0) {
+                let newScore = this.previewScore()
+                groupService.modifyGroupScore({groupId:this.$data.editingGroup._id, score:newScore, type:"score"})
                     .then(res=>{
                         if (res.data.status == 0) {
-                            this.$data.editingGroup.score =  this.$data.editingScore
+                            this.$data.editingGroup.score =  newScore
                             this.$data.editing = false
-                            this.loadItems({ page, itemsPerPage, sortBy })
                         }
                     })
             }
+            this.$data.editing = false
         },
 
         dialogCancel() { 
             this.$data.editing = false
+        },
+
+        dismissGroup() {
+            groupService.removeGroup({groupId: this.$data.editingGroup})
+        },
+
+        getAvailableMembers() {
+            let members =  this.$data.editingMembers.map(m => m.name+" "+m.num )
+            let spareMembers = this.mockGetDefaultMembers()
+            return [...members, ...spareMembers]
+        },
+
+        mockGetDefaultMembers() {
+            return this.$data.mockSpareMembers.map(m => m.name+" "+m.num)
         }
     }
 })
