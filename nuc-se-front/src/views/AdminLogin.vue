@@ -43,6 +43,7 @@
 
 <script lang="js">
 import adminService  from '../services/adminService'
+import storageService from '../services/storageService'
 import { defineComponent } from 'vue'
 
 export default defineComponent({
@@ -69,8 +70,8 @@ export default defineComponent({
             adminService.login(this.username, this.password)
                 .then(res => {
                     this.loading = false 
-                    console.log(res, res.data)
                     if (res.data.status == 0) {
+                        storageService.set(storageService.PREFIX, this.username)
                         this.$router.push({name: "edit"})
                     }
                     else {

@@ -7,6 +7,9 @@ const adminRoutes = [
     {
         path: '/edit',
         name: "edit",
+        meta: {
+            auth: true
+        },
         component: () => import('@/views/AdminEdit.vue')
     },
 ]
