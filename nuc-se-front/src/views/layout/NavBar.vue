@@ -16,6 +16,7 @@
         
           <template v-slot:append>
             <!-- <v-btn icon="mdi-magnify"></v-btn> -->
+            <v-btn v-if="user != null">{{ user }}</v-btn>
             <v-btn @click="$router.push({name: 'login'})"> 登录 </v-btn>
           </template>
         </v-app-bar>
@@ -28,10 +29,16 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
+  data: () => ({
+    user: "A",
+  }),
+
   methods: {
     onHomeIcon() {
       this.$router.push({name: 'home'})
-    }
+    },
+
+    
   }
 })
 
