@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 import json
 import random
@@ -57,12 +59,16 @@ class Member:
     name: str = ""
     num: str = ""
 
+from datetime import datetime
+
 @dataclass
 class Group:
     _id: str = ""
     name: str = ""
     score: float = 0
-    members: list = field(default_factory=list)
+    regularScore: float = 0
+    modifyTimestamp: int = 0
+    members: list[Member] = field(default_factory=list)
     
     def to_json(self) -> str:
         members = list(map(lambda x: x.__dict__, self.members))
@@ -82,12 +88,16 @@ class Group:
         GID += 1
         return Group(f"{GID}",
             random.choice(NAMES), 
-            random.randrange(0, 300, 10), 
+            random.randrange(0, 300, 10),
+            random.randrange(0, 100, 10), 
+            int(datetime.now().timestamp()),
             [GenM() for _ in range(5)]
             )
     
-    def parse(data: str) -> 'Group':
-        data = json.loads(data)
+    def parse(data: str | dict) -> 'Group':
+        if isinstance(data, str):
+            data = json.loads(data)
+            
         members = data.get('members', [])
         members = list(map(lambda x: Member(**x), members))
         data['members'] = members
