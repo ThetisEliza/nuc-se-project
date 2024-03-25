@@ -21,11 +21,23 @@ app.json.ensure_ascii = False
 system = System().load_sys()
 
 
-def allowCrossSite(response: Response) -> Response:
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Method'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = '*'
-    return response
+def register_middleware(app: Flask):
+    
+    @app.before_request
+    def before_request_test():
+        # print('before')
+        pass
+        
+    @app.after_request
+    def after_request_test(response: Response) -> Response:
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Method'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = '*'
+        if request.method == "OPTION":
+            abort(200)
+        return response
+        
+register_middleware(app)
     
 ##########################
 # Group Full status api
@@ -35,7 +47,7 @@ def get_all_groups():
     data = {
         "groups": system.dbc.getAllGroups(None),
     }
-    return allowCrossSite(jsonify(data))
+    return jsonify(data)
 
 @app.route('/api/groups/page')
 def get_page_groups():
@@ -53,7 +65,7 @@ def get_page_groups():
         "total": total
     }
     res = jsonify(data)
-    return allowCrossSite(res)
+    return res
 
 
 ##########################
@@ -67,9 +79,9 @@ def login():
     pswd = request.args.get("password", 0)
     mock_list = {
         'qwe': 'qwe',
-        'admin': 12345,
-        'admin1': 123451,
-        'admin2': 123452
+        'admin': '12345',
+        'admin1': '123451',
+        'admin2': '123452'
     }
     login_status = 0
     if user in mock_list:
@@ -89,8 +101,8 @@ def login():
         "msg": msg
     }
     if login_status != 0:
-        abort(allowCrossSite(jsonify(data)))
-    return allowCrossSite(jsonify(data))
+        abort(jsonify(data))
+    return jsonify(data)
 
 from datetime import datetime
 
@@ -111,41 +123,44 @@ def get_group_details():
     _id = request.args.get('groupid', 0)
     group = find_group(_id)
     if group is None:
-        abort(allowCrossSite(Response("group not found")))
-    return allowCrossSite(jsonify(group))
+        abort(Response("group not found"))
+    return jsonify(group)
 
 @app.route('/api/group/modifyscore')
 def modify_group_score():
     print(request.args)
     _id = request.args.get('groupId')
     score = request.args.get('score', 0)
-    print(_id, score)
+    # print(_id, score)
     res = system.dbc.updateGroupScore(_id, float(score))
     data = {
         "msg": "ok",
         "status": res
     }
-    return allowCrossSite(jsonify(data))
+    return jsonify(data)
+
 
 def add_group():
-    res = jsonify(system.groups)
-    return allowCrossSite(res)
+    res = jsonify(system.dbc.getAllGroups())
+    return res
 
+@app.route('/api/group/dismiss', methods=['POST'])
 def remove_group():
-    res = jsonify(system.groups)
-    return allowCrossSite(res)
+    print(request.json)
+    res = jsonify(system.dbc.getAllGroups())
+    return res
 
 def add_group_member():
     res = jsonify(system.groups)
-    return allowCrossSite(res)
+    return res
 
 def remove_group_member():
     res = jsonify(system.groups)
-    return allowCrossSite(res)
+    return res
 
 def get_idle_members():
     res = jsonify(system.groups)
-    return allowCrossSite(res)
+    return res
 
 
 if __name__ == '__main__':

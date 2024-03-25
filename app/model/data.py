@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 import json
 import random
@@ -63,10 +65,10 @@ from datetime import datetime
 class Group:
     _id: str = ""
     name: str = ""
-    score: float = 0,
-    regularScore: float = 0,
-    modifyTimestamp: int = 0,
-    members: list = field(default_factory=list)
+    score: float = 0
+    regularScore: float = 0
+    modifyTimestamp: int = 0
+    members: list[Member] = field(default_factory=list)
     
     def to_json(self) -> str:
         members = list(map(lambda x: x.__dict__, self.members))
@@ -92,8 +94,10 @@ class Group:
             [GenM() for _ in range(5)]
             )
     
-    def parse(data: str) -> 'Group':
-        data = json.loads(data)
+    def parse(data: str | dict) -> 'Group':
+        if isinstance(data, str):
+            data = json.loads(data)
+            
         members = data.get('members', [])
         members = list(map(lambda x: Member(**x), members))
         data['members'] = members
