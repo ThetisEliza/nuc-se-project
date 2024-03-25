@@ -71,7 +71,7 @@
                 <v-card-text>
                     <v-text-field
                         variant="outlined"
-                        v-model="editingGroup.name"
+                        v-model="editingTargetGroup.name"
                         label="团队名称"
                         :disabled="!newGroup"
                     ></v-text-field>
@@ -86,8 +86,9 @@
                     <v-row justify="center">
                         
                         <v-select
-                            v-model="editingMembersName"
+                            :item-props="memberSelectProps"
                             :items="getAvailableMembers()"
+                            v-model="editingTargetGroup.members"
                             label="成员"
                             chips
                             multiple
@@ -97,7 +98,7 @@
                         
                         <v-btn 
                         v-if="!newGroup"
-                        @click="dismissGroup()"
+                        @click="revealConfirmDismiss = true"
                         color="red">
                             解散团队
                         </v-btn>
@@ -108,6 +109,22 @@
                 </v-card-text>
 
 
+
+                
+
+                <v-expand-transition>
+                    <v-card
+                    v-if="revealConfirmDismiss"
+                    class="v-card--reveal"
+                    style="height: 100%;"
+                    >
+                        <v-card-text>
+                            <p>
+                                <strong  color="red">是否确认要解散团队?</strong>
+                            </p>
+                        </v-card-text>
+                    </v-card>
+                </v-expand-transition>
 
                 <v-card-actions>
                     <v-spacer></v-spacer>
@@ -125,6 +142,7 @@
                     </v-btn>
 
                 </v-card-actions>
+
             </v-card>
             
             
@@ -157,28 +175,36 @@ export default defineComponent({
 
         editing: false,
         editingAddScore: 0,
+
         editingGroup: null,    
+        editingTargetGroup: null,
+
         newGroup: false,
+        revealConfirmDismiss: false,
         search: "",    
 
         editingMembers: [],
-        editingMembersName: [],
-        mockSpareMembers: [
-            {_id: 1, name: "SM1", num: "xxx1"},
-            {_id: 2, name: "SM2", num: "xxx2"},
-            {_id: 3, name: "SM3", num: "xxx3"},
-        ]
-
+        spareMembers: [],
     }),
 
     mounted() {
         this.loadItems({page: 1, itemsPerPage: this.$data.itemsPerPage, sortBy: ""})
+        this.getSpareMembers()
     },
 
     methods: {
+        refreshGroups() {
+            this.loadItems({page: 1, itemsPerPage: this.$data.itemsPerPage, sortBy: ""})
+        },
 
         loadItems({ page, itemsPerPage, sortBy, search }) {
-            groupService.getPageGroups({pageNum: page, groupsPerPage: itemsPerPage, sortBy: sortBy})
+            let sort_key = ""
+            let order = ""
+            if(sortBy.length == 1){
+                sort_key = sortBy[0].key
+                order = sortBy[0].order
+            } 
+            groupService.getPageGroups({pageNum: page, groupsPerPage: itemsPerPage, sortBy: sort_key, order: order})
                 .then(res=>{
                     res.data.groups.forEach(group => {
                         group.regularScore = parseInt(group.regularScore)
@@ -198,48 +224,82 @@ export default defineComponent({
         },
 
         previewScore() {
-            if (this.$data.editingGroup != null) {
-                let a = parseInt( this.$data.editingAddScore );
-                if(isNaN(a)) {
-                    a = 0
-                }
-                return this.$data.editingGroup.score + a
+            
+            let a = parseInt( this.$data.editingAddScore );
+            if(isNaN(a)) {
+                a = 0
             }
-            return 0   
+            
+            return a + this.$data.editingTargetGroup.score ;
         },
 
         dialogOpen(group) {
+            this.getSpareMembers()
+
             if (group == null) {
-                this.editingGroup = {name: "", score: 0, members: []}
-                this.$data.editingScore = 0
-                this.$data.newGroup = true
+                this.$data.editingTargetGroup = {name: "", score: 0, members: []}
+                this.$data.newGroup = true                
             } else {
-                this.$data.editingScore = group.score
-                this.$data.editingGroup = group
+                this.$data.editingTargetGroup = JSON.parse(JSON.stringify(group))
                 this.$data.newGroup = false
+                this.$data.editingGroup = group
             }
-            this.$data.editingMembers = this.$data.editingGroup.members
-            this.$data.editingMembersName = this.$data.editingMembers.map(m => m.name +" "+m.num)
-            this.$data.editing = true
             
+            this.$data.editing = true
         },
 
         dialogConfirm() { 
-            if (this.$data.editingAddScore != 0) {
-                let newScore = this.previewScore()
-                groupService.modifyGroupScore({groupId:this.$data.editingGroup._id, score:newScore, type:"score"})
-                    .then(res=>{
-                        if (res.data.status == 0) {
-                            this.$data.editingGroup.score =  newScore
-                            this.$data.editing = false
-                        }
+            if (this.$data.newGroup) {
+                groupService.createGroup({group: this.$data.editingTargetGroup})
+            } else {
+                if (this.$data.editingAddScore != 0) {
+                    let newScore = this.previewScore()
+                    groupService.modifyGroupScore({groupId:this.$data.editingGroup._id, score:newScore, type:"score"})
+                        .then(res=>{
+                            if (res.data.status == 0) {
+                                this.$data.editingGroup.score =  newScore
+                                this.$data.editing = false
+                            }
+                        })
+                }
+                if (this.$data.revealConfirmDismiss) {
+                    groupService.dismissGroup({group: this.$data.editingTargetGroup})
+                        .then(res => {
+                            this.refreshGroups()
+                        })
+                }
+
+                if (JSON.stringify(this.$data.editingTargetGroup.members) != JSON.stringify(this.$data.editingGroup.members)) {
+                    console.log("edited")
+                    console.log(this.$data.editingTargetGroup.members)
+                    console.log("current")
+                    console.log(this.$data.editingGroup.members)
+                    let targetMembers = this.$data.editingTargetGroup.members
+                    let currentMembers = this.$data.editingGroup.members
+                    let targetMemberNums = targetMembers.map(m_ => m_.num)
+                    let currentMemberNums = currentMembers.map(m_ => m_.num)
+                    console.log(targetMemberNums)
+                    console.log(currentMemberNums)
+
+                    let shouldBeAddedMembers = targetMembers.filter(m => {
+                        console.log(currentMemberNums, m.num, currentMemberNums.includes(m.num))
+                        !currentMemberNums.includes(m.num)
                     })
+                    console.log("should be added", shouldBeAddedMembers)
+
+                    let shouldBeRemovedMembers = this.$data.editingGroup.members.filter(m => {
+                        !this.$data.editingTargetGroup.members.map(m_ => m_.num).includes(m.num)
+                    })
+                    console.log("should be removed", shouldBeRemovedMembers)
+                }
             }
+            this.$data.revealConfirmDismiss = false;
             this.$data.editing = false
         },
 
         dialogCancel() { 
             this.$data.editing = false
+            this.$data.revealConfirmDismiss = false;
         },
 
         dismissGroup() {
@@ -247,13 +307,23 @@ export default defineComponent({
         },
 
         getAvailableMembers() {
-            let members =  this.$data.editingMembers.map(m => m.name+" "+m.num )
-            let spareMembers = this.mockGetDefaultMembers()
-            return [...members, ...spareMembers]
+            let members =  this.$data.editingTargetGroup.members
+            let availableMembers = [...members, ...this.$data.spareMembers]
+            return availableMembers
         },
 
-        mockGetDefaultMembers() {
-            return this.$data.mockSpareMembers.map(m => m.name+" "+m.num)
+        getSpareMembers() {
+            groupService.getSpareMembers()
+                .then(res => {
+                    this.$data.spareMembers = res.data.spare_members
+                })
+        },
+
+        memberSelectProps(item) {
+            return {
+                title: item.name,
+                subtitle: item.num
+            }
         }
     }
 })
@@ -261,4 +331,10 @@ export default defineComponent({
 </script>
 
 <style>
+.v-card--reveal {
+  bottom: 0;
+  opacity: 1 !important;
+  position: absolute;
+  width: 100%;
+}
 </style>

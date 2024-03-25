@@ -76,7 +76,13 @@ export default defineComponent({
     methods: {
 
         loadItems({ page, itemsPerPage, sortBy, search }) {
-            groupService.getPageGroups({pageNum: page, groupsPerPage: itemsPerPage, sortBy: sortBy})
+            let sort_key = ""
+            let order = ""
+            if(sortBy.length == 1){
+                sort_key = sortBy[0].key
+                order = sortBy[0].order
+            } 
+            groupService.getPageGroups({pageNum: page, groupsPerPage: itemsPerPage, sortBy: sort_key, order: order})
                 .then(res=>{
                     res.data.groups.forEach(group => {
                         group.regularScore = parseInt(group.regularScore)
