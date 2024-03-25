@@ -1,7 +1,7 @@
 <!--
  * @Date: 2024-03-18 14:38:26
  * @LastEditors: ThetisEliza wxf199601@gmail.com
- * @LastEditTime: 2024-03-25 14:01:49
+ * @LastEditTime: 2024-03-25 15:03:28
  * @FilePath: \nuc-se-front\src\views\AdminEdit.vue
 -->
 <template>
@@ -238,6 +238,7 @@ export default defineComponent({
 
         dialogOpen(group) {
             this.$data.editingGroup = group
+            this.$data.editingAddScore = 0
             this.getSpareMembers()
 
             if (group == null) {
@@ -259,12 +260,14 @@ export default defineComponent({
             } else {
                 if (this.$data.editingAddScore != 0) {
                     let newScore = this.previewScore()
-                    groupService.modifyGroupScore({groupId:this.$data.editingGroup._id, score:newScore, type:"score"})
+                    this.$data.editingTargetGroup.score = newScore
+                    groupService.modifyGroupScore({group: this.$data.editingTargetGroup})
                         .then(res=>{
                             if (res.data.status == 0) {
                                 this.$data.editingGroup.score =  newScore
                                 this.$data.editing = false
                             }
+                            this.refreshGroups()
                         })
                 }
                 if (this.$data.revealConfirmDismiss) {
