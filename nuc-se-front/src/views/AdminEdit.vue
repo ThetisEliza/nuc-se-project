@@ -1,7 +1,7 @@
 <!--
  * @Date: 2024-03-18 14:38:26
  * @LastEditors: ThetisEliza wxf199601@gmail.com
- * @LastEditTime: 2024-03-25 11:32:31
+ * @LastEditTime: 2024-03-25 14:01:49
  * @FilePath: \nuc-se-front\src\views\AdminEdit.vue
 -->
 <template>
@@ -88,20 +88,17 @@
                 <!-- <v-card-actions> -->
                 <v-card-text>
                     
-                    
-                    <v-row justify="center">
-                        
-                        <v-select
-                            :item-props="memberSelectProps"
-                            :items="getAvailableMembers()"
-                            v-model="editingTargetGroup.members"
-                            label="成员"
-                            chips
-                            multiple
-                        ></v-select>
+                    <v-select
+                        :item-props="memberSelectProps"
+                        :items="getAvailableMembers()"
+                        v-model="editingTargetGroup.members"
+                        label="成员"
+                        chips
+                        multiple
+                    ></v-select>
                         
                         
-                        
+                    <v-row justify="center">    
                         <v-btn 
                         v-if="!newGroup"
                         @click="revealConfirmDismiss = true"
@@ -240,6 +237,7 @@ export default defineComponent({
         },
 
         dialogOpen(group) {
+            this.$data.editingGroup = group
             this.getSpareMembers()
 
             if (group == null) {
@@ -248,7 +246,6 @@ export default defineComponent({
             } else {
                 this.$data.editingTargetGroup = JSON.parse(JSON.stringify(group))
                 this.$data.newGroup = false
-                this.$data.editingGroup = group
             }
             
             this.$data.editing = true
@@ -256,7 +253,9 @@ export default defineComponent({
 
         dialogConfirm() { 
             if (this.$data.newGroup) {
-                groupService.createGroup({group: this.$data.editingTargetGroup})
+                groupService.createGroup({group: this.$data.editingTargetGroup}).then(res=>{
+                    this.refreshGroups()
+                })
             } else {
                 if (this.$data.editingAddScore != 0) {
                     let newScore = this.previewScore()
@@ -274,29 +273,25 @@ export default defineComponent({
                             this.refreshGroups()
                         })
                 }
-
                 if (JSON.stringify(this.$data.editingTargetGroup.members) != JSON.stringify(this.$data.editingGroup.members)) {
-                    console.log("edited")
-                    console.log(this.$data.editingTargetGroup.members)
-                    console.log("current")
-                    console.log(this.$data.editingGroup.members)
                     let targetMembers = this.$data.editingTargetGroup.members
                     let currentMembers = this.$data.editingGroup.members
                     let targetMemberNums = targetMembers.map(m_ => m_.num)
                     let currentMemberNums = currentMembers.map(m_ => m_.num)
-                    console.log(targetMemberNums)
-                    console.log(currentMemberNums)
 
-                    let shouldBeAddedMembers = targetMembers.filter(m => {
-                        console.log(currentMemberNums, m.num, currentMemberNums.includes(m.num))
-                        !currentMemberNums.includes(m.num)
-                    })
-                    console.log("should be added", shouldBeAddedMembers)
+                    groupService.modifyGroupMembers({group: this.$data.editingTargetGroup})
+                        .then(res => {
+                            this.refreshGroups()
+                        })
+                    // let shouldBeAddedMembers = targetMembers.filter(m => {
+                    //     return !currentMemberNums.includes(m.num)
+                    // })
+                    // console.log("should be added", shouldBeAddedMembers)
 
-                    let shouldBeRemovedMembers = this.$data.editingGroup.members.filter(m => {
-                        !this.$data.editingTargetGroup.members.map(m_ => m_.num).includes(m.num)
-                    })
-                    console.log("should be removed", shouldBeRemovedMembers)
+                    // let shouldBeRemovedMembers = currentMembers.filter(m => {
+                    //     return !targetMemberNums.includes(m.num)
+                    // })
+                    // console.log("should be removed", shouldBeRemovedMembers)
                 }
             }
             this.$data.revealConfirmDismiss = false;
@@ -313,7 +308,7 @@ export default defineComponent({
         },
 
         getAvailableMembers() {
-            let members =  this.$data.editingTargetGroup.members
+            let members =  this.$data.editingGroup == null? []: this.$data.editingGroup.members
             let availableMembers = [...members, ...this.$data.spareMembers]
             return availableMembers
         },

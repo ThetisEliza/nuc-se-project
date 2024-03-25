@@ -1,3 +1,9 @@
+/*
+ * @Date: 2024-03-25 11:31:41
+ * @LastEditors: ThetisEliza wxf199601@gmail.com
+ * @LastEditTime: 2024-03-25 13:49:19
+ * @FilePath: \nuc-se-front\src\services\groupService.js
+ */
 import service from '../utils/request'
 
 const getAllGroups = () => {
@@ -10,6 +16,10 @@ const getPageGroups = ({pageNum, groupsPerPage, sortBy, order}) => {
 
 const modifyGroupScore = ({groupId, score, type}) => {
     return service.get("group/modifyscore", {params: {groupId: groupId, score: score, type: type}})
+}
+
+const modifyGroupMembers = ({group}) => {
+    return service.post("group/modifymembers", {group: group})
 }
 
 const dismissGroup = ({group}) => {
@@ -28,6 +38,7 @@ export default {
     getAllGroups,
     getPageGroups,
     modifyGroupScore,
+    modifyGroupMembers,
     dismissGroup,
     createGroup,
     getSpareMembers
